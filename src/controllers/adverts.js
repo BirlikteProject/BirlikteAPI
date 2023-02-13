@@ -1,16 +1,40 @@
 const AdvertService = require('../services/AdvertService');
 const errorResponse = require('../scripts/utils/ErrorResponse');
 const { ACCEPTED, ADMIN } = require('../config/constants');
+const { uploadImage } = require('../scripts/utils/upload');
 const addAdvert = async (req, res, next) => {
   try {
+    const file = req.file;
+    if (!file) {
+      return next(new errorResponse('Resim seçmediniz!', 400));
+    }
+    const streamLength = file.buffer.length;
+    const maxSize = 10 * 1024 * 1024; //
+    if (streamLength > maxSize) {
+      return next(new errorResponse("Resim 10 mb'den fazla olamaz!", 400));
+    }
     const user = req.user;
     // * type,user_id
-    const { title, description, image_url, category_id, city_id, postingType } =
-      req.body;
+    const { title, description, category_id, city_id, postingType } = req.body;
+
+    const checkAdvert = await AdvertService.findOne({
+      title,
+      user_id: user._id,
+    });
+    if (checkAdvert) {
+      return next(
+        new errorResponse('Aynı isimde ilanınız bulunmaktadır!', 400)
+      );
+    }
+    const result = await uploadImage(file, next);
+    //!resim işleminde hata varsa işleme devam etme
+    if (!result.status) {
+      return;
+    }
     const data = {
       title,
       description,
-      image_url,
+      image_url: result?.data ?? '',
       type: user.type,
       user_id: user._id,
       category_id,
@@ -19,16 +43,20 @@ const addAdvert = async (req, res, next) => {
     };
     const advert = await AdvertService.create(data);
     if (!advert) {
-      next(new errorResponse('İlan oluşturulamadı', 404));
+      return next(new errorResponse('İlan oluşturulamadı', 404));
     }
-    return res
-      .status(201)
-      .json({ status: true, message: 'İlan oluşturuldu!', data: advert });
+
+    if (advert) {
+      return res.status(201).json({
+        status: true,
+        message: 'İlan oluşturuldu!',
+        data: advert,
+      });
+    }
   } catch (err) {
     if (err.code === 11000) {
       return next(
-        new errorResponse('Aynı isimde ilanınız bulunmaktadır!'),
-        400
+        new errorResponse('Aynı isimde ilanınız bulunmaktadır!', 400)
       );
     }
     return next(new errorResponse('İlan eklenemedi!', 400));
@@ -154,7 +182,11 @@ const deleteAdvert = async (req, res, next) => {
   try {
     const user = req.user;
     const { id } = req.params;
-    const advert = await AdvertService.findOne({ _id: id, isDeleted:false ,user_id:user._id });
+    const advert = await AdvertService.findOne({
+      _id: id,
+      isDeleted: false,
+      user_id: user._id,
+    });
     if (!advert) {
       return next(new errorResponse('Silinecek İlan bulunamadı', 404));
     }
@@ -168,18 +200,16 @@ const deleteAdvert = async (req, res, next) => {
         return next(new errorResponse('İlan silinemedi!', 400));
       }
       // ! data kısmı verilmeyebilir data--> null
-      return res
-        .status(200)
-        .json({
-          status: true,
-          message: 'İlan başarıyla silindi!',
-          data: deletedAdvert,
-        });
+      return res.status(200).json({
+        status: true,
+        message: 'İlan başarıyla silindi!',
+        data: deletedAdvert,
+      });
     }
 
-    return next(new errorResponse("İlan silme işleminiz başarısız",403))
+    return next(new errorResponse('İlan silme işleminiz başarısız', 403));
   } catch (err) {
-    return next(new errorResponse('İlan silme işleminiz başarısız!',403));
+    return next(new errorResponse('İlan silme işleminiz başarısız!', 403));
   }
 };
 
@@ -191,15 +221,13 @@ const searchAdvert = async (req, res, next) => {
     // * title' ve şehirde arama
     // ! limit eklenebilir daha sonradan örneğin 50 tane gelsin(sorted edilmiş halde)
     if (term && city_id) {
-      const {total,data} = await AdvertService.search(city_id, term);
-      return res
-        .status(200)
-        .json({
-          total,
-          status: true,
-          message: 'Sonuçlar başarılı bir şekilde getirildi.',
-          data,
-        });
+      const { total, data } = await AdvertService.search(city_id, term);
+      return res.status(200).json({
+        total,
+        status: true,
+        message: 'Sonuçlar başarılı bir şekilde getirildi.',
+        data,
+      });
     }
     return next(new errorResponse('Aranılan ilan bulunamadı!', 400));
   } catch (err) {
