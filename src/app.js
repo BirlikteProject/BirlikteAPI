@@ -30,7 +30,7 @@ app.use("/api/v1/upload",require("./routes/upload"));
 app.use("/cities",require("./routes/cities"));
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 443;
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
     console.log("Server is running: "+PORT);
   });
