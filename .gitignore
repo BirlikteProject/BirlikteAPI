@@ -1,2 +1,4 @@
-.env
 node_modules/
+.env
+package-lock.json
+Birlikte.postman_collection.json

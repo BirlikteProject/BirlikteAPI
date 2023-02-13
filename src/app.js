@@ -20,11 +20,12 @@ app.use(cors(corsOptions));
 
 //routes
 app.use("/api/v1/category",require("./routes/categories"));
-app.use("/api/v1/authanticate",require("./routes/auth"));
+app.use("/api/v1/authenticate",require("./routes/auth"));
 app.use("/api/v1/advert",require("./routes/adverts"));
 app.use("/api/v1/profile",require("./routes/profiles"));
 app.use("/api/v1/conversation",require("./routes/conversations"));
 app.use("/api/v1/message",require("./routes/messages"));
+app.use("/api/v1/upload",require("./routes/upload"));
 
 app.use("/cities",require("./routes/cities"));
 app.use(errorHandler);
