@@ -6,7 +6,13 @@ class AdvertService extends BaseService {
   constructor() {
     super(Advert);
   }
-  async list(where, limit, skip) {
+  async listProfile(where) {
+    return Advert.find(where)
+      .populate('category_id')
+      .populate('user_id', 'fullName image_url username email')
+      .populate('city_id');
+  }
+  async listPagination(where, limit, skip) {
     const adverts = await Advert.find(where)
       .limit(limit)
       .skip(skip)
