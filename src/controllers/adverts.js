@@ -152,7 +152,7 @@ const updateAdvert = async (req, res, next) => {
         postingType,
         city_id,
       };
-      // ! where date ve createdAt harici geldiğinde de çalışıyor ve günceliyor düzenlenebilir.
+      // ! where date ve createdAt harici geldiğinde de çalışıyor ve güncelliyor düzenlenebilir.
       const updatedAdvert = await AdvertService.update(id, where);
       if (!updatedAdvert) {
         return next(new errorResponse('Güncelleme işlemi başarısız!'), 400);
