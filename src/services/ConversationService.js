@@ -10,9 +10,9 @@ class ConversationService extends BaseService{
           .limit(limit)
           .skip(skip)
           .sort({ createdAt: -1 })
-          .populate('sender_id')
-          .populate('receiver_id')
-          .populate('advert_id');
+          .populate('sender_id','fullName image_url username email')
+          .populate('receiver_id','fullName image_url username email')
+          .populate({ path: 'advert_id', populate: { path: 'category_id',path:'city_id' } });
         
       const total = await Conversation.find(where).count();
        

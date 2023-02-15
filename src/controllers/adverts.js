@@ -1,5 +1,5 @@
 const AdvertService = require('../services/AdvertService');
-const UserService = require("../services/UserService");
+const UserService = require('../services/UserService');
 const errorResponse = require('../scripts/utils/ErrorResponse');
 const { ACCEPTED, ADMIN } = require('../config/constants');
 const { uploadImage } = require('../scripts/utils/upload');
@@ -118,20 +118,24 @@ const getAdverts = async (req, res, next) => {
     let limit = req.query.limit;
     let skip = (page - 1) * limit;
     page < 1 ? (page = 1) : null; //page 0 -1 vs. gibi durumların kontrolü
-    const type = req.query.type;
+    const {type,term,city_id} = req.query;
     // type belirtilmemiş ise
-    let where;
-    if (!type) {
-      where = { isApproved: ACCEPTED, isDeleted: false };
-    } else {
-      where = {
-        isApproved: ACCEPTED, // * Onaylanmış
-        isDeleted: false,
-        type,
-      };
+    let  where = { isApproved: ACCEPTED, isDeleted: false };
+    if(city_id){
+      where.city_id=city_id;
+    }
+    if(term){
+      where.title=new RegExp(term, 'i');
+    }
+    if(type){
+      where.type=type;
     }
 
-    const { data, total } = await AdvertService.listPagination(where, limit, skip);
+    const { data, total } = await AdvertService.listPagination(
+      where,
+      limit,
+      skip
+    );
 
     return res.status(200).json({
       total,
@@ -242,31 +246,10 @@ const deleteAdvert = async (req, res, next) => {
   }
 };
 
-const searchAdvert = async (req, res, next) => {
-  try {
-    // ! validasyon ekle
-    const { city_id } = req.params;
-    const { term } = req.query;
-    // * title' ve şehirde arama
-    // ! limit eklenebilir daha sonradan örneğin 50 tane gelsin(sorted edilmiş halde)
-    if (term && city_id) {
-      const { total, data } = await AdvertService.search(city_id, term);
-      return res.status(200).json({
-        total,
-        status: true,
-        message: 'Sonuçlar başarılı bir şekilde getirildi.',
-        data,
-      });
-    }
-    return next(new errorResponse('Aranılan ilan bulunamadı!', 400));
-  } catch (err) {
-    return next(new errorResponse('İlan Arama işlemi başarısız!', 403));
-  }
-};
 
 const getAdvertsByCategory = async (req, res, next) => {
   try {
-    const {category_id} = req.params;
+    const { category_id } = req.params;
     let page = parseInt(req.query.page) || 1;
     let limit = req.query.limit;
     let skip = (page - 1) * limit;
@@ -276,7 +259,7 @@ const getAdvertsByCategory = async (req, res, next) => {
     // type belirtilmemiş ise
     let where;
     if (!type) {
-      where = { isApproved: ACCEPTED,category_id,isDeleted: false };
+      where = { isApproved: ACCEPTED, category_id, isDeleted: false };
     } else {
       where = {
         isApproved: ACCEPTED, // * Onaylanmış
@@ -285,10 +268,20 @@ const getAdvertsByCategory = async (req, res, next) => {
         type,
       };
     }
-    const {data,total} = await AdvertService.listPagination(where,limit,skip)
+    const { data, total } = await AdvertService.listPagination(
+      where,
+      limit,
+      skip
+    );
 
-    return res.status(200).json({total,status:true,message:"İlanlar kategorisine göre getirildi!",data})
-    
+    return res
+      .status(200)
+      .json({
+        total,
+        status: true,
+        message: 'İlanlar kategorisine göre getirildi!',
+        data,
+      });
   } catch (err) {
     return next(
       new errorResponse('İlanlar kategorisine göre getirilemedi!', 403)
@@ -298,23 +291,31 @@ const getAdvertsByCategory = async (req, res, next) => {
 
 const getAdvertsByProfile = async (req, res, next) => {
   try {
-    const {user_id}=req.params;
+    const { user_id } = req.params;
     const where = {
       user_id,
-      isDeleted:false
-    }
+      isDeleted: false,
+    };
     const user = await UserService.findById(user_id);
 
-    if(!user){
-      return next(new errorResponse("Böyle bir kullanıcı bulunmamaktadır!"),404);
+    if (!user) {
+      return next(
+        new errorResponse('Böyle bir kullanıcı bulunmamaktadır!'),
+        404
+      );
     }
     const adverts = await AdvertService.listProfile(where);
 
-    return res.status(200).json({total:adverts.length,status:true,message:"İlanlar başarılı bir şekilde getirildi!",data:adverts})
-
-    
+    return res
+      .status(200)
+      .json({
+        total: adverts.length,
+        status: true,
+        message: 'İlanlar başarılı bir şekilde getirildi!',
+        data: adverts,
+      });
   } catch (err) {
-    console.log(err)
+    console.log(err);
     return next(new errorResponse('İlanlar getirilemedi!', 403));
   }
 };
@@ -325,7 +326,6 @@ module.exports = {
   getAdverts,
   updateAdvert,
   deleteAdvert,
-  searchAdvert,
   getAdvertsByCategory,
-  getAdvertsByProfile
+  getAdvertsByProfile,
 };

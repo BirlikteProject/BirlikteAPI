@@ -3,7 +3,7 @@ const inMemoryStorage = multer.memoryStorage();
 const getStream = require('into-stream');
 const { BlockBlobClient } = require('@azure/storage-blob');
 const Jimp = require('jimp');
-const errorResponse = require('../utils/ErrorResponse');
+const errorResponse = require('./ErrorResponse');
 
 const containerName = 'images';
 

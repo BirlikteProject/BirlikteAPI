@@ -22,12 +22,12 @@ class AdvertService extends BaseService {
 
     return { total:adverts.length ?? 0 , data: adverts };
   }
-  async search(city_id, term) {
-    const filteredAdverts= await Advert.find({ city_id, title: new RegExp(term, 'i'),isApproved:ACCEPTED }).sort({
-      createdAt: -1,
-    });
-    return {total:filteredAdverts.length ?? 0,data:filteredAdverts} 
-  }
+  // async search(city_id, term) {
+  //   const filteredAdverts= await Advert.find({ city_id, title: new RegExp(term, 'i'),isApproved:ACCEPTED }).sort({
+  //     createdAt: -1,
+  //   });
+  //   return {total:filteredAdverts.length ?? 0,data:filteredAdverts} 
+  // }
   async findOne(where) {
     return Advert.findOne(where)
       .populate('category_id')

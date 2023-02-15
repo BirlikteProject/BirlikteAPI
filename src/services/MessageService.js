@@ -9,7 +9,7 @@ class MessageService extends BaseService{
         const messages = await Message.find(where)
           .limit(limit)
           .skip(skip)
-          .sort({ createdAt: -1 })
+          .sort({ createdAt: 1 })
           .populate('conversation_id')
           .populate('sender_id');
         

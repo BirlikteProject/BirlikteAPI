@@ -11,7 +11,7 @@ const loginValidation = Joi.object({
 const registerValidation = Joi.object({
   firebase_token: Joi.string().regex(firebaseTokenRegex).required(),
   type: Joi.string().valid(DEMANDER, SUPPORTER).required().messages({ 'any.only': '"\type" must be one of [supporter,demander]' }),
-  tckn:Joi.string().regex(tcknRegex).required(),
+  tckn:Joi.string().regex(tcknRegex),
   fullName:Joi.string().min(3).max(100),
   image_url: Joi.string().uri().allow(''),
 });

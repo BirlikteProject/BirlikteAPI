@@ -100,10 +100,10 @@ const getConversations = async (req, res, next) => {
     limit < 1 ? limit=10 : null;
     let skip = (page - 1) * limit;
     page < 1 ? (page = 1) : null; //page 0 -1 vs. gibi durumların kontrolü
-    // const deal = req.query.deal;
+    const deal = req.query.deal; // 0-- false 1--true
     // deal --> true ise anlaştıklarımız , deal --> false ise sonuçlanmamış veya anlaşamadıklarımız
-
     const where = {
+      deal:deal==1 ? true : false, 
       ended_conversation: false,
       $or: [{ sender_id: user_id }, { receiver_id: user_id }],
     };
