@@ -14,6 +14,7 @@ const registerValidation = Joi.object({
   tckn:Joi.string().regex(tcknRegex),
   fullName:Joi.string().min(3).max(100),
   image_url: Joi.string().uri().allow(''),
+  username:Joi.string()
 });
 
 
