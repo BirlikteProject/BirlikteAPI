@@ -22,11 +22,11 @@ const signIn = async (req, res, next) => {
 const signUp = async (req, res, next) => {
   try {
     const { type, tckn, fullName } = req.body;
-    
+    const { name, picture, email } = req.user;
     const user = await UserService.findOne({ email: req.user.email });
     if (req.user.firebase.sign_in_provider == 'google.com') {
-      const { name, picture, email } = req.user;
-
+     
+      console.log("google kaydı")
       if (user) {
         return next(
           new errorResponse('Kayıtlı böyle bir email bulunmaktadır.!', 400)
@@ -44,6 +44,7 @@ const signUp = async (req, res, next) => {
         return sendToken(newUser, 201, res);
       }
     } else if (req.user.firebase.sign_in_provider == 'password') {
+      console.log("password")
       if (user) {
         return next(
           new errorResponse('Kayıtlı böyle bir email bulunmaktadır', 400)
@@ -63,6 +64,7 @@ const signUp = async (req, res, next) => {
       return next(new errorResponse('Kayıt işlemi hatalı!', 400));
     }
   } catch (err) {
+    console.log("Kayıt catch err",err)
     return next(new errorResponse('Kayıt işlemi hatalı!', 403));
   }
 };

@@ -11,7 +11,7 @@ const AdvertSchema = new mongoose.Schema({
     type:{type:String,enum:[SUPPORTER,DEMANDER]},
     postingType:{type:String,enum:[ONLINE,FACETOFACE]},
     city_id:{type:mongoose.Types.ObjectId,ref:"City",index:true},
-    isApproved:{type:String,enum:[PENDING,ACCEPTED,REJECTED],default:PENDING},
+    isApproved:{type:String,enum:[PENDING,ACCEPTED,REJECTED],default:ACCEPTED},
     isDeleted:{type:Boolean,default:false}
 },{timestamps:true,versionKey:false,collection:"adverts"});
 

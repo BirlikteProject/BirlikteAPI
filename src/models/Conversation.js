@@ -8,7 +8,13 @@ const ConversationSchema = new mongoose.Schema({
     last_message:String,
     last_message_date:Date, // string olabilir
     deal:{type:Boolean,default:false},
-    ended_conversation:{type:Boolean,default:false}
+    sender_accepted:{type:Boolean,default:false},
+    receiver_accepted:{type:Boolean,default:false},
+    ended_conversation:{type:Boolean,default:false},
+    read_by:{
+      sender:{is_read:{type:Boolean,default:false},message_count:{type:Number,default:0},last_time:{type:Date,default:new Date()}},
+      receiver:{is_read:{type:Boolean,default:false},message_count:{type:Number,default:0},last_time:{type:Date,default:new Date()}}
+    }
 },{timestamps:true,versionKey:false,collection:"conversations"});
 
 ConversationSchema.index({sender_id:1,receiver_id:1,advert_id:1},{unique:true})

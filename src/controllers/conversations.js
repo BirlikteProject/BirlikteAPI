@@ -45,10 +45,15 @@ const createConversation = async (req, res, next) => {
 
     return next(new errorResponse('İletişim kanalı oluşturulamadı!', 403));
   } catch (err) {
-    if(err.statusCode===400){
-      return next(new errorResponse("Kendi kendinize iletişim kanalı oluşturamazsınız!",400))
+    if (err.statusCode === 400) {
+      return next(
+        new errorResponse(
+          'Kendi kendinize iletişim kanalı oluşturamazsınız!',
+          400
+        )
+      );
     }
-    return next(new errorResponse('İletişim kanalı oluşturulamadı!',403) );
+    return next(new errorResponse('İletişim kanalı oluşturulamadı!', 403));
   }
 };
 
@@ -97,14 +102,15 @@ const getConversations = async (req, res, next) => {
     const user_id = req.user._id;
     let page = parseInt(req.query.page) || 1;
     let limit = req.query.limit;
-    limit < 1 ? limit=10 : null;
+    limit < 1 ? (limit = 10) : null;
     let skip = (page - 1) * limit;
     page < 1 ? (page = 1) : null; //page 0 -1 vs. gibi durumların kontrolü
-    // const deal = req.query.deal;
+    const deal = req.query.deal; // 0-- false 1--true
     // deal --> true ise anlaştıklarımız , deal --> false ise sonuçlanmamış veya anlaşamadıklarımız
-
     const where = {
+      deal: deal == 1 ? true : false,
       ended_conversation: false,
+      // belki true veya false olarak bakılabilir
       $or: [{ sender_id: user_id }, { receiver_id: user_id }],
     };
     const { data, total } = await ConversationService.list(where, limit, skip);
@@ -113,6 +119,7 @@ const getConversations = async (req, res, next) => {
       const sender_id = conversation.sender_id;
       const receiver_id = conversation.receiver_id;
       const advert_id = conversation.advert_id;
+      const read_by =conversation?.read_by;
       const {
         last_message,
         last_message_date,
@@ -132,9 +139,12 @@ const getConversations = async (req, res, next) => {
         updatedAt,
         ended_conversation,
       };
+      console.log(conversation)
       if (sender_id._id.toString() === user_id.toString()) {
+        data.read_by=read_by.sender ?? null;
         return conversationArr.push({ sender_id: null, receiver_id, ...data });
       } else {
+        data.read_by=read_by.receiver ?? null;
         return conversationArr.push({ sender_id, receiver_id: null, ...data });
       }
     });
@@ -149,4 +159,49 @@ const getConversations = async (req, res, next) => {
     return next(new errorResponse('İletişim kanalları getirilemedi!', 404));
   }
 };
-module.exports = { createConversation, deleteConversation, getConversations };
+
+const aggrementConversation = async (req, res, next) => {
+  try {
+    const { id } = req.params; // id : conversation_id
+    const { advert_id, isAccepted } = req.body;
+    const user_id = req.user._id;
+    const advert = await AdvertService.findById(advert_id);
+    if (!advert) {
+      return next(
+        new errorResponse('İletişim kanalı güncellenecek İlan bulunamadı!', 404)
+      );
+    }
+    const conversationWhere = {
+      _id: id,
+      advert_id: advert._id,
+      ended_conversation: false,
+      $or: [{ sender_id: user_id }, { receiver_id: user_id }],
+    };
+    const conversation = await ConversationService.findOneAndUpdate(conversationWhere);
+    if (!conversation) {
+      return next(
+        new errorResponse('Güncellenecek iletişim kanalı bulunamadı', 404)
+      );
+    }
+    let sender_accepted=conversation?.sender_accepted ?? false;
+    let receiver_accepted=conversation?.receiver_accepted ?? false;
+    const { sender_id } = conversation;
+    if (sender_id._id.toString() === user_id.toString()) {
+      sender_accepted=conversation.sender_accepted = isAccepted;
+    
+    } else {
+      receiver_accepted=conversation.receiver_accepted = isAccepted;
+    }
+    if(sender_accepted && receiver_accepted){
+      conversation.deal=true;
+    }else{
+      conversation.deal=false;
+    }
+    const newConversation = await conversation.save();
+    return res.status(200).json({status:true,message:"İletişim kanalı güncellendi!",data:newConversation})
+
+  } catch (err) {
+    return next(new errorResponse('İletişim kanalı güncellenemedi!', 403));
+  }
+};
+module.exports = { createConversation, deleteConversation, getConversations,aggrementConversation };

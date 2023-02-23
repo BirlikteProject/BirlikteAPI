@@ -1,21 +1,37 @@
 const AdvertService = require('../services/AdvertService');
+const UserService = require('../services/UserService');
 const errorResponse = require('../scripts/utils/ErrorResponse');
 const { ACCEPTED, ADMIN } = require('../config/constants');
 const { uploadImage } = require('../scripts/utils/upload');
+
 const addAdvert = async (req, res, next) => {
   try {
-    const file = req.file;
-    if (!file) {
-      return next(new errorResponse('Resim seçmediniz!', 400));
-    }
-    const streamLength = file.buffer.length;
-    const maxSize = 10 * 1024 * 1024; //
-    if (streamLength > maxSize) {
-      return next(new errorResponse("Resim 10 mb'den fazla olamaz!", 400));
-    }
     const user = req.user;
     // * type,user_id
     const { title, description, category_id, city_id, postingType } = req.body;
+
+    const { image_url } = req.body;
+    const categories = [
+      {
+        _id: '63e8ebcb1f42670b82d7d8d5',
+        name: 'Psikolojik Destek',
+        image_url: '',
+      },
+      { _id: '63e8ebb91f42670b82d7d8d3', name: 'Barınma', image_url: '' },
+      { _id: '63e7c86d752984d395d3dcf1', name: 'İstihdam', image_url: '' },
+      { _id: '63e7c856752984d395d3dcee', name: 'Eğitim', image_url: '' },
+      {
+        _id: '63eac436780b4e796f00132b',
+        name: 'Sosyal Alan & Destek',
+        image_url: '',
+      },
+    ];
+    let categoryResult;
+    if (!image_url) {
+      categoryResult = categories.find(
+        (category) => category_id == category._id
+      );
+    }
 
     const checkAdvert = await AdvertService.findOne({
       title,
@@ -26,15 +42,28 @@ const addAdvert = async (req, res, next) => {
         new errorResponse('Aynı isimde ilanınız bulunmaktadır!', 400)
       );
     }
-    const result = await uploadImage(file, next);
-    //!resim işleminde hata varsa işleme devam etme
-    if (!result.status) {
-      return;
+    const file = req.file;
+    // if (!file) {
+    //   return next(new errorResponse('Resim seçmediniz!', 400));
+    // }
+    let result;
+    if (file) {
+      const streamLength = file.buffer.length;
+      const maxSize = 10 * 1024 * 1024;
+      if (streamLength > maxSize) {
+        return next(new errorResponse("Resim 10 mb'den fazla olamaz!", 400));
+      }
+      result = await uploadImage(file, next);
+      //!resim işleminde hata varsa işleme devam etme
+      if (!result.status) {
+        return;
+      }
     }
+
     const data = {
       title,
       description,
-      image_url: result?.data ?? '',
+      image_url: file ? result?.data : categoryResult?.image_url, // dosya yükleme işlemi yapmıyorsa, kategoriye göre resim seçip gönderilecek.
       type: user.type,
       user_id: user._id,
       category_id,
@@ -89,20 +118,24 @@ const getAdverts = async (req, res, next) => {
     let limit = req.query.limit;
     let skip = (page - 1) * limit;
     page < 1 ? (page = 1) : null; //page 0 -1 vs. gibi durumların kontrolü
-    const type = req.query.type;
+    const {type,term,city_id} = req.query;
     // type belirtilmemiş ise
-    let where;
-    if (!type) {
-      where = { isApproved: ACCEPTED, isDeleted: false };
-    } else {
-      where = {
-        isApproved: ACCEPTED, // * Onaylanmış
-        isDeleted: false,
-        type,
-      };
+    let  where = { isApproved: ACCEPTED, isDeleted: false };
+    if(city_id){
+      where.city_id=city_id;
+    }
+    if(term){
+      where.title=new RegExp(term, 'i');
+    }
+    if(type){
+      where.type=type;
     }
 
-    const { data, total } = await AdvertService.list(where, limit, skip);
+    const { data, total } = await AdvertService.listPagination(
+      where,
+      limit,
+      skip
+    );
 
     return res.status(200).json({
       total,
@@ -213,25 +246,77 @@ const deleteAdvert = async (req, res, next) => {
   }
 };
 
-const searchAdvert = async (req, res, next) => {
+
+const getAdvertsByCategory = async (req, res, next) => {
   try {
-    // ! validasyon ekle
-    const { city_id } = req.params;
-    const { term } = req.query;
-    // * title' ve şehirde arama
-    // ! limit eklenebilir daha sonradan örneğin 50 tane gelsin(sorted edilmiş halde)
-    if (term && city_id) {
-      const { total, data } = await AdvertService.search(city_id, term);
-      return res.status(200).json({
+    const { category_id } = req.params;
+    let page = parseInt(req.query.page) || 1;
+    let limit = req.query.limit;
+    let skip = (page - 1) * limit;
+    // ! düzeltilecek
+    page < 1 ? (page = 1) : null; //page 0 -1 vs. gibi durumların kontrolü
+    const type = req.query.type;
+    // type belirtilmemiş ise
+    let where;
+    if (!type) {
+      where = { isApproved: ACCEPTED, category_id, isDeleted: false };
+    } else {
+      where = {
+        isApproved: ACCEPTED, // * Onaylanmış
+        category_id,
+        isDeleted: false,
+        type,
+      };
+    }
+    const { data, total } = await AdvertService.listPagination(
+      where,
+      limit,
+      skip
+    );
+
+    return res
+      .status(200)
+      .json({
         total,
         status: true,
-        message: 'Sonuçlar başarılı bir şekilde getirildi.',
+        message: 'İlanlar kategorisine göre getirildi!',
         data,
       });
-    }
-    return next(new errorResponse('Aranılan ilan bulunamadı!', 400));
   } catch (err) {
-    return next(new errorResponse('İlan Arama işlemi başarısız!', 403));
+    return next(
+      new errorResponse('İlanlar kategorisine göre getirilemedi!', 403)
+    );
+  }
+};
+
+const getAdvertsByProfile = async (req, res, next) => {
+  try {
+    const { user_id } = req.params;
+    const where = {
+      user_id,
+      isDeleted: false,
+    };
+    const user = await UserService.findById(user_id);
+
+    if (!user) {
+      return next(
+        new errorResponse('Böyle bir kullanıcı bulunmamaktadır!'),
+        404
+      );
+    }
+    const adverts = await AdvertService.listProfile(where);
+
+    return res
+      .status(200)
+      .json({
+        total: adverts.length,
+        status: true,
+        message: 'İlanlar başarılı bir şekilde getirildi!',
+        data: adverts,
+      });
+  } catch (err) {
+    console.log(err);
+    return next(new errorResponse('İlanlar getirilemedi!', 403));
   }
 };
 
@@ -241,5 +326,6 @@ module.exports = {
   getAdverts,
   updateAdvert,
   deleteAdvert,
-  searchAdvert,
+  getAdvertsByCategory,
+  getAdvertsByProfile,
 };

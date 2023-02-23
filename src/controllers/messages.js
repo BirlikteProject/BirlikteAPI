@@ -9,14 +9,17 @@ const sendMessage = async (req, res, next) => {
     const user_id = req.user._id;
     const { message } = req.body;
 
-    const conversation = await ConversationService.findOne({
+    let conversation = await ConversationService.findOneAndUpdate({
       _id: id,
       ended_conversation: false,
       $or: [{ sender_id: user_id }, { receiver_id: user_id }],
     });
     if (!conversation) {
       return next(
-        new errorResponse('Mesaj gönderilecek bir iletişim kanalı bulunamadı!',404)
+        new errorResponse(
+          'Mesaj gönderilecek bir iletişim kanalı bulunamadı!',
+          404
+        )
       );
     }
     const savedMessage = await MessageService.create({
@@ -28,7 +31,29 @@ const sendMessage = async (req, res, next) => {
     if (!savedMessage) {
       return next(new errorResponse('Mesaj gönderilemedi', 400));
     }
+    const { sender_id } = conversation;
+ 
+    if (sender_id._id.toString() === user_id.toString()) {
+      //gönderen olduğum için alıcının mesajı artacak ben görüntülemiş olacağım zaten
+      conversation.read_by.receiver.message_count+=1;
+      conversation.read_by.receiver.is_read = false;
+      // conversation.read_by.receiver.last_time = new Date();
 
+      conversation.read_by.sender.message_count = 0;
+      conversation.read_by.sender.is_read = true;
+      conversation.read_by.sender.last_time = new Date();
+    } else {
+      //alıcı olduğum için gönderen mesajı görmeyecek ben görüntüleyecem(reicever)
+      conversation.read_by.sender.message_count+=1;
+      conversation.read_by.sender.is_read = false;
+      // conversation.read_by.sender.last_time = new Date();
+
+
+      conversation.read_by.receiver.message_count = 0;
+      conversation.read_by.receiver.is_read = true;
+      conversation.read_by.receiver.last_time = new Date();
+
+    }
     conversation.last_message = savedMessage.message;
     conversation.last_message_date = savedMessage.time;
     await conversation.save();
@@ -40,7 +65,7 @@ const sendMessage = async (req, res, next) => {
     // ! mesaj arttırma olayını daha sonradan yapabiliriz gelen mesaj sayısı
     // const socket=io('ws://localhost:3200', { transports: ['websocket'] });
   } catch (err) {
-    console.log(err)
+    console.log(err);
     return next(new errorResponse('Mesaj gönderilemedi', 403));
   }
 };
@@ -63,10 +88,22 @@ const getMessages = async (req, res, next) => {
       return next(new errorResponse('Böyle bir conversation bulunamadı!', 404));
     }
     const where = {
-        conversation_id:conversation._id
-    }
+      conversation_id: conversation._id,
+    };
     const { data, total } = await MessageService.list(where, limit, skip);
-// ! conversation_id populate etmeye gerek var mı ?
+
+    const { sender_id } = conversation;
+    if (sender_id._id.toString() === user_id.toString()) {
+      conversation.read_by.sender.message_count = 0;
+      conversation.read_by.sender.is_read = true;
+      conversation.read_by.sender.last_time = new Date();
+    } else {
+      conversation.read_by.receiver.message_count = 0;
+      conversation.read_by.receiver.is_read = true;
+      conversation.read_by.receiver.last_time = new Date();
+    }
+    await conversation.save();
+    // ! conversation_id populate etmeye gerek var mı ?
     return res.status(200).json({
       total,
       status: true,
@@ -74,6 +111,7 @@ const getMessages = async (req, res, next) => {
       data: data,
     });
   } catch (err) {
+    console.log(err);
     return next(new errorResponse('Mesajlar getirilemedi', 403));
   }
 };

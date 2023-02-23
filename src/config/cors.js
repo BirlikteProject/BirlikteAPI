@@ -1,11 +1,14 @@
+const domainsFromEnv = process.env.CORS_DOMAINS || ""
+const whitelist = domainsFromEnv.split(",").map(item => item.trim())
 
 const corsOptions = {
-    origin: [
-      'http://localhost:5000',
-      'http://localhost:3200',
-      'http://142.93.106.148:5000',
-      'http://142.93.106.148:3200'
-    ],
-    optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
+  origin: function (origin, callback) {
+    if (whitelist.indexOf(origin) !== -1 || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
   }
+};
+
 module.exports=corsOptions;

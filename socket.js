@@ -1,14 +1,4 @@
-const { Server } = require("socket.io");
-const { readFileSync } = require("fs");
-const { createServer } = require("https");
-
-const httpsServer = createServer({
-  key: readFileSync("/var/ssl/cert.key"),
-  cert: readFileSync("/var/ssl/cert.pem"),
-});
-
-const io = new Server(httpsServer, (3200, { perMessageDeflate: true }));
-
+const io = require("socket.io")(3200, { perMessageDeflate: true });
 // const mongoose = require("mongoose");
 // const dotenv = require("dotenv");
 // const User = require("./src/models/User");
@@ -16,14 +6,19 @@ const io = new Server(httpsServer, (3200, { perMessageDeflate: true }));
 
 // dotenv.config();
 
-// mongoose
-//   .connect(process.env.MONGO_URI)
-//   .then(async () => {
-//     console.log("mongoose bağlantısı başarılı");
-//   })
-//   .catch(function (error) {
-//     console.log(error);
-//   });
+
+// Error handling function for authentication errors
+// const handleAuthenticationError = (err, socket) => {
+//   if (err) {
+//     socket.emit('unauthorized', { message: err });
+//   } else {
+//     socket.disconnect();
+//   }
+// };
+io.use(authMiddleware);
+// io.use((socket, next) => {
+//   handleAuthenticationError("Yetkisiz giriş", socket);
+// });
 
 let users = [];
 
@@ -48,39 +43,41 @@ const getUser = (userId) => {
 try {
   io.on("connection", async (socket) => {
     console.log("connection");
-
+    
     socket.on("addUser", ({ userId }) => {
-      console.log("add user", userId);
-      addUser(userId, socket.id);
-
-      io.emit("getUsers", users);
-    });
-
+      console.log("add user",userId)
+          addUser(userId, socket.id);
+          
+          io.emit("getUsers", users);
+        });
+        
     //  socket.on("online",({userId})=> {
     //       console.log("online",userId)
 
     //     io.emit("userIsOnline",userIsOnline(userId));
     //   })
-
+      
     socket.on("sendMessage", async ({ senderId, receiverId, text }) => {
-      try {
-        console.log("send Message", senderId, "receiver", receiverId);
-        const user = getUser(receiverId);
-
-        io.to(user?.socketId).emit("getMessage", {
-          senderId,
-          text,
-        });
-      } catch (err) {
-        console.log(err);
-      }
-    });
+          try{
+            console.log("send Message",senderId,"receiver",receiverId)
+            const user = getUser(receiverId);
+            
+            io.to(user?.socketId).emit("getMessage", {
+              senderId,
+              text,
+            });
+    
+          }catch(err){
+            console.log(err);
+          }
+  
+        });   
     // çıkış yaptığında
-    socket.on("disconnect", () => {
-      console.log("disconnect");
+    socket.on('disconnect', () => {
+      console.log('disconnect');
       removeUser(socket.id);
       // removePlaceUser(socket.id) // bunu nasıl yapıcağını düşün ?
-      io.emit("getUsers", users);
+      io.emit('getUsers', users);
     });
   });
 } catch (error) {
