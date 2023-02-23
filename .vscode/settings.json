@@ -1,0 +1,8 @@
+{
+    "appService.zipIgnorePattern": [
+        "node_modules{,/**}",
+        ".vscode{,/**}"
+    ],
+    "appService.defaultWebAppToDeploy": "/subscriptions/13d8d97c-24ae-4080-8d9d-896e3f1fc2cb/AppServices/subscriptions/13d8d97c-24ae-4080-8d9d-896e3f1fc2cb/resourceGroups/Birlikte/providers/Microsoft.Web/sites/birlikteapi",
+    "appService.deploySubpath": "."
+}
