@@ -107,8 +107,5 @@ jobs:
       - name: Deploys application
         uses: Azure/k8s-deploy@v4
         with:
-          action: deploy
           manifests: ./kubernetes/backend.yaml
-          images: |
-            ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ env.TAG }}
-          pull-images: yes
+          images: ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ env.TAG }}
