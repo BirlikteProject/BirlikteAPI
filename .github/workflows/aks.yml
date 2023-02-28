@@ -102,17 +102,22 @@ jobs:
           cluster-name: ${{ env.CLUSTER_NAME }}
           admin: 'false'
           use-kubelogin: 'true'
-
-      - uses: jtalk/k8s-deploy@v2
+          
+      - name: Create secret in Kubernetes cluster
+        uses: Azure/k8s-create-secret@v4.0
         with:
-          namespace: 'default'
-          manifests: ./kubernetes/backend.yaml
-          images: 'birlikte.azurecr.io/birlikte-backend:${{ env.TAG }}'
-          kubectl-version: 'latest'
+          secret-name: k8s-secret
+          # Container Registry URL
+          container-registry-url: birlikte.azurecr.io
+          # Container Registry user name
+          container-registry-username: ${{ secrets.ACR_USERNAME }}
+          # Container Registry password
+          container-registry-password: ${{ secrets.ACR_PASSWORD }}
 
       # Deploys application based on given manifest file
-      #- name: Deploys application
-      #  uses: Azure/k8s-deploy@v4
-      #  with:
-      #    manifests: ./kubernetes/backend.yaml
-      #    images: ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ env.TAG }}
+      - name: Deploys application
+        uses: Azure/k8s-deploy@v4
+        with:
+          manifests: kubernetes/backend.yaml
+          images: ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ env.TAG }}
+          imagepullsecret: k8s-secret
