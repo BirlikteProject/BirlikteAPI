@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
       - name:  backend
-        image:  backend:latest
+        image:  birlikte.azurecr.io/backend:v1
       restartPolicy: Always
 ---
 apiVersion: v1
