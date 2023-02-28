@@ -41,7 +41,7 @@ env:
   RESOURCE_GROUP: "birlikte-web"
   CLUSTER_NAME: "birlikte-web-dev"
   DEPLOYMENT_MANIFEST_PATH: "./kubernetes"
-  TAG: ${{ github_run_number }}
+  TAG: ${{ github.run.number }}
 
 jobs:
   buildImage:
