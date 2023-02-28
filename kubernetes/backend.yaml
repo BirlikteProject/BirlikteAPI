@@ -39,3 +39,7 @@ spec:
     protocol: TCP
     port: 80
     targetPort: 8080
+  - name: socket
+    protocol: TCP
+    port: 3000
+    targetPort: 3000
