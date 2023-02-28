@@ -22,8 +22,9 @@ spec:
     spec:
       containers:
       - name:  backend
-        image:  birlikte.azurecr.io/backend:v1
+        image:  birlikte.azurecr.io/birlikte-backend:v1
       restartPolicy: Always
+      imagePullPolicy: Always
 ---
 apiVersion: v1
 kind: Service
