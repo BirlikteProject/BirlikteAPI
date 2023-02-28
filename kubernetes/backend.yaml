@@ -24,7 +24,6 @@ spec:
       - name:  backend
         image:  birlikte.azurecr.io/birlikte-backend:v1
       restartPolicy: Always
-      imagePullPolicy: Always
 ---
 apiVersion: v1
 kind: Service
