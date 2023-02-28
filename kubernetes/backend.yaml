@@ -24,3 +24,18 @@ spec:
       - name:  backend
         image:  backend:latest
       restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: default
+spec:
+  selector:
+    app: backend
+  type: ClusterIP
+  ports:
+  - name: backend
+    protocol: TCP
+    port: 80
+    targetPort: 8080
