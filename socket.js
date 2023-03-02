@@ -6,7 +6,7 @@ const io = require("socket.io")(3200, { perMessageDeflate: true });
 
 // dotenv.config();
 
-//const authMiddleware = require("./src/middlewares/auth.js")
+const authMiddleware = require("./src/middlewares/auth.js")
 
 // Error handling function for authentication errors
 // const handleAuthenticationError = (err, socket) => {
@@ -17,9 +17,9 @@ const io = require("socket.io")(3200, { perMessageDeflate: true });
 //   }
 // };
 io.use(authMiddleware);
-// io.use((socket, next) => {
-//   handleAuthenticationError("Yetkisiz giriş", socket);
-// });
+//io.use(authMiddleware,(socket, next) => {
+//next()
+//});
 
 let users = [];
 
