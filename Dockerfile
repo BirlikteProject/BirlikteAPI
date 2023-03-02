@@ -2,6 +2,8 @@ FROM node:16-alpine
 
 WORKDIR /usr/src/app
 
+USER root
+
 RUN apk update && apk upgrade
 RUN apk add git
 
