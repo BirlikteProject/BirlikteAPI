@@ -5,11 +5,16 @@ WORKDIR /usr/src/app
 RUN apk update && apk upgrade
 RUN apk add git
 
+RUN apk add supervisor
+
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
 COPY package*.json ./
 COPY . .
 
 RUN npm install
 
 EXPOSE 8080
+EXPOSE 3200
 
-CMD [ "npm", "start" ]
+CMD ["/usr/bin/supervisord"]
