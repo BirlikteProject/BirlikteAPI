@@ -6,6 +6,7 @@ const io = require("socket.io")(3200, { perMessageDeflate: true });
 
 // dotenv.config();
 
+const authMiddleware = require("./src/middlewares/auth.js")
 
 // Error handling function for authentication errors
 // const handleAuthenticationError = (err, socket) => {

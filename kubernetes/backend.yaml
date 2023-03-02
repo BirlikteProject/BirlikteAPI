@@ -24,6 +24,8 @@ spec:
       - name:  backend
         image:  birlikte.azurecr.io/birlikte-backend:v1
       restartPolicy: Always
+      imagePullSecrets: 
+      - name: k8s-secret
 ---
 apiVersion: v1
 kind: Service
@@ -41,5 +43,5 @@ spec:
     targetPort: 8080
   - name: socket
     protocol: TCP
-    port: 3000
-    targetPort: 3000
+    port: 3200
+    targetPort: 3200
